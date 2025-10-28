@@ -79,7 +79,6 @@ export async function detectVideoCodecSupport(): Promise<CodecSupport> {
       }
     } catch (error) {
       console.warn(`Codec ${codecInfo.codec} support check failed:`, error);
-      continue;
     }
   }
 

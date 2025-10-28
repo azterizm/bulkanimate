@@ -3,10 +3,10 @@
  */
 
 import {
-  Output,
-  WebMOutputFormat,
   BufferTarget,
-  CanvasSource
+  CanvasSource,
+  Output,
+  WebMOutputFormat
 } from 'mediabunny';
 import type { CodecSupport } from './codecSupport';
 

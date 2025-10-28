@@ -28,7 +28,7 @@ export async function encodeFramesWithMediaRecorder(
   frames: ImageData[],
   opts: FallbackOptions
 ): Promise<FallbackResult> {
-  const { width, height, fps, duration, onProgress } = opts;
+  const { width, height, fps,  onProgress } = opts;
   const totalFrames = frames.length;
   
   // Create canvas for rendering

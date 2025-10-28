@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { detectVideoCodecSupport } from "./utils/codecSupport";
 import { encodeFramesWebCodecs } from "./utils/encodeWebCodecs";
 import { encodeFramesWithMediaRecorder } from "./utils/mediaRecorderFallback";
@@ -24,7 +24,7 @@ const FastCanvasRecorder = () => {
 			? 0
 			: t === 1
 				? 1
-				: Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+				: 2 ** (-10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
 	};
 
 	const drawFrame = (
