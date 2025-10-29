@@ -3,12 +3,6 @@ import { detectVideoCodecSupport } from "./utils/codecSupport";
 import { encodeFramesWebCodecs } from "./utils/encodeWebCodecs";
 import { encodeFramesWithMediaRecorder } from "./utils/mediaRecorderFallback";
 
-interface RenderTime {
-	render: string;
-	encode: string;
-	total: string;
-}
-
 const FastCanvasRecorder = () => {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const previewCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -16,7 +10,6 @@ const FastCanvasRecorder = () => {
 	const [videoUrl, setVideoUrl] = useState<string | null>(null);
 	const [progress, setProgress] = useState<number>(0);
 	const [info, setInfo] = useState<string>("");
-	const [renderTime, setRenderTime] = useState<RenderTime | null>(null);
 
 	const springEase = (t: number): number => {
 		const c4 = (2 * Math.PI) / 3;
@@ -75,7 +68,6 @@ const FastCanvasRecorder = () => {
 		setStatus("rendering");
 		setProgress(0);
 		setInfo("Pre-rendering frames...");
-		setRenderTime(null);
 
 		const renderStartTime = performance.now();
 
@@ -130,9 +122,7 @@ const FastCanvasRecorder = () => {
 			}
 
 			// Step 3: Encode frames using appropriate method
-			const encodingStartTime = performance.now();
 			let blob: Blob;
-			let encodeDuration: string;
 
 			if (codecSupport.supported) {
 				// Use WebCodecs + Mediabunny path
@@ -147,7 +137,6 @@ const FastCanvasRecorder = () => {
 					},
 				});
 				blob = result.blob;
-				encodeDuration = result.durations.encode.toFixed(2);
 			} else {
 				// Use MediaRecorder fallback path
 				const result = await encodeFramesWithMediaRecorder(frames, {
@@ -161,10 +150,6 @@ const FastCanvasRecorder = () => {
 					},
 				});
 				blob = result.blob;
-				encodeDuration = (
-					(performance.now() - encodingStartTime) /
-					1000
-				).toFixed(2);
 			}
 
 			const encodingEndTime = performance.now();
@@ -176,18 +161,11 @@ const FastCanvasRecorder = () => {
 			setVideoUrl(url);
 			setStatus("completed");
 			setProgress(100);
-			setRenderTime({
-				render: renderDuration,
-				encode: encodeDuration,
-				total: totalTime,
-			});
 
 			const codecName = codecSupport.supported
 				? codecSupport.label
 				: "MediaRecorder";
-			setInfo(
-				`Complete! ${codecName} - Total time: ${totalTime}s (${(10 / parseFloat(totalTime)).toFixed(1)}x faster than real-time)`,
-			);
+			setInfo(`Complete! ${codecName} - Total time: ${totalTime}s`);
 		} catch (error) {
 			console.error("Recording failed:", error);
 			setStatus("error");
@@ -201,7 +179,6 @@ const FastCanvasRecorder = () => {
 		setStatus("idle");
 		setProgress(0);
 		setInfo("");
-		setRenderTime(null);
 		if (videoUrl) {
 			URL.revokeObjectURL(videoUrl);
 			setVideoUrl(null);
@@ -304,44 +281,6 @@ const FastCanvasRecorder = () => {
 					)}
 				</div>
 
-				{/* Performance Stats */}
-				{renderTime && (
-					<div className="bg-green-900/20 border border-green-700 rounded-lg p-6">
-						<h3 className="text-lg font-semibold text-green-400 mb-3">
-							Performance Results
-						</h3>
-						<div className="grid md:grid-cols-3 gap-4 text-sm">
-							{renderTime.render && (
-								<div>
-									<div className="text-gray-400 mb-1">Frame Rendering</div>
-									<div className="text-2xl font-bold text-green-400">
-										{renderTime.render}s
-									</div>
-								</div>
-							)}
-							{renderTime.encode && (
-								<div>
-									<div className="text-gray-400 mb-1">Video Encoding</div>
-									<div className="text-2xl font-bold text-green-400">
-										{renderTime.encode}s
-									</div>
-								</div>
-							)}
-							<div>
-								<div className="text-gray-400 mb-1">Total Time</div>
-								<div className="text-2xl font-bold text-green-400">
-									{renderTime.total}s
-								</div>
-								<div className="text-xs text-gray-500 mt-1">
-									{renderTime.render
-										? `${(10 / parseFloat(renderTime.total)).toFixed(1)}x faster`
-										: "Real-time"}
-								</div>
-							</div>
-						</div>
-					</div>
-				)}
-
 				{/* Video Preview */}
 				{videoUrl && (
 					<div className="space-y-4 bg-gray-800 rounded-lg p-6 border border-gray-700">
@@ -369,78 +308,6 @@ const FastCanvasRecorder = () => {
 						</a>
 					</div>
 				)}
-
-				{/* Technical Details */}
-				<div className="bg-gray-800 rounded-lg p-6 border border-gray-700 space-y-3">
-					<h3 className="text-lg font-semibold text-green-400">
-						🚀 Fast Offline Method
-					</h3>
-					<div className="space-y-2 text-sm text-gray-300">
-						<p className="text-gray-400 mb-2">How it works:</p>
-						<ol className="space-y-1 ml-4 list-decimal">
-							<li>Pre-render all 600 frames into memory (~1-2s)</li>
-							<li>Feed frames to MediaRecorder as fast as possible</li>
-							<li>Export complete video (~0.5-1s)</li>
-						</ol>
-						<div className="mt-4 p-3 bg-green-900/20 rounded border border-green-700">
-							<div className="font-semibold text-green-400">Benefits:</div>
-							<ul className="mt-2 space-y-1 text-xs">
-								<li>✓ 3-5x faster than real-time</li>
-								<li>✓ No waiting for animation to play</li>
-								<li>✓ Can pause/resume rendering</li>
-								<li>✓ Perfect for batch exports</li>
-								<li>✓ Frames stored in memory for editing</li>
-							</ul>
-						</div>
-					</div>
-				</div>
-
-				{/* Use Cases */}
-				<div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-					<h3 className="text-lg font-semibold text-blue-400 mb-4">
-						When to Use Fast Offline Method
-					</h3>
-					<div className="text-sm">
-						<ul className="space-y-1 text-gray-300">
-							<li>✓ Exporting multiple videos in batch</li>
-							<li>✓ Long animations (10s+)</li>
-							<li>✓ User experience matters (fast feedback)</li>
-							<li>✓ Need to edit frames before export</li>
-							<li>✓ Want to show rendering progress</li>
-						</ul>
-					</div>
-				</div>
-
-				{/* Technical Notes */}
-				<div className="bg-blue-900/20 border border-blue-700 rounded-lg p-6">
-					<h3 className="text-lg font-semibold text-blue-400 mb-3">
-						Technical Implementation Notes
-					</h3>
-					<ul className="space-y-2 text-sm text-gray-300">
-						<li>
-							<strong>Memory usage:</strong> Fast method stores 600 frames ×
-							1920×1080×4 bytes = ~4.7 GB in memory (uncompressed). In practice,
-							JavaScript optimizes this.
-						</li>
-						<li>
-							<strong>Speedup factor:</strong> Typically 3-5x faster than
-							real-time. A 60-second animation exports in ~12-20 seconds.
-						</li>
-						<li>
-							<strong>Frame accuracy:</strong> Both methods produce identical
-							output quality - the only difference is export speed.
-						</li>
-						<li>
-							<strong>Browser limits:</strong> Fast method may struggle with
-							100+ second animations due to array size limits. Consider
-							chunking.
-						</li>
-						<li>
-							<strong>UI responsiveness:</strong> Fast method uses setTimeout(0)
-							every 10 frames to prevent blocking the main thread.
-						</li>
-					</ul>
-				</div>
 			</div>
 		</div>
 	);

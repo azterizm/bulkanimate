@@ -10,7 +10,6 @@
 		"preview": "vite preview"
 	},
 	"dependencies": {
-		"html-to-image": "^1.11.13",
 		"mediabunny": "^1.24.2",
 		"react": "^19.1.1",
 		"react-dom": "^19.1.1"
