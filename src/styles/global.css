@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+	--color-bg: #2e313d;
+	--color-primary: #f9e82f;
+	--color-success: #33ad94;
+	--color-error: #f57b5d;
+	--color-white: #f4f4f450;
+	--font-body: "TikTok Sans", sans-serif;
+}
+
+@layer base {
+	html,
+	body {
+		@apply bg-bg;
+	}
+
+	* {
+		font-family: "Tiktok Sans", sans-serif;
+		box-sizing: border-box;
+		color: var(--color-primary);
+	}
+
+	button {
+		@apply cursor-pointer;
+	}
+}
+
+.hover-underline-animation {
+	display: inline-block;
+	position: relative;
+}
+
+.hover-underline-animation::after {
+	content: "";
+	position: absolute;
+	width: 100%;
+	transform: scaleX(0);
+	height: 2px;
+	bottom: 0;
+	left: 0;
+	background-color: var(--color-primary);
+	transition: transform 0.25s ease-out;
+}
+
+.hover-underline-animation:hover::after {
+	transform: scaleX(1);
+	transform-origin: bottom left;
+}
