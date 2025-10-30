@@ -2,20 +2,28 @@ import { ArrowRightIcon, HeartIcon } from "@phosphor-icons/react";
 import { animated, useSpring } from "@react-spring/web";
 import { useEffect, useRef, useState } from "react";
 import UploadGrid from "./upload-grid";
+import UploadPreview from "./upload-preview";
 
 export default function Home() {
 	const [isAppOpen, setIsAppOpen] = useState(false);
 	const [buttonRect, setButtonRect] = useState({ width: 0, height: 0 });
 	const buttonRef = useRef<HTMLButtonElement>(null);
+	const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+
+	const imagePreviews = uploadedFiles.map((file) => URL.createObjectURL(file));
 
 	const [springs] = useSpring(
 		() => ({
-			headingSize: isAppOpen ? "4.5rem" : "3rem",
+			headingSize: isAppOpen
+				? uploadedFiles.length
+					? "2.5rem"
+					: "4.5rem"
+				: "3rem",
 			o: isAppOpen ? 0 : 1,
 			rw: 0,
 			rh: 0,
 		}),
-		[isAppOpen],
+		[isAppOpen, uploadedFiles.length],
 	);
 
 	useEffect(() => {
@@ -31,6 +39,33 @@ export default function Home() {
 		setIsAppOpen(true);
 	}
 
+	function removeUpload(i: number) {
+		setUploadedFiles((e) => [...e.slice(0, i), ...e.slice(i + 1)]);
+	}
+
+	function triggerFileInput() {
+		// Create a new input element
+		const input = document.createElement("input");
+		input.type = "file";
+		input.accept =
+			"image/png, image/jpeg, image/jpg, image/gif, image/webp, image/avif, image/svg+xml, image/apng, image/bmp, .ico, .tif, .tiff";
+		input.multiple = true;
+
+		input.onchange = (e) => {
+			const target = e.target as HTMLInputElement;
+			// Only add files if there are actual files selected
+			if (target.files && target.files.length > 0) {
+				setUploadedFiles((c) => [...c, ...Array.from(target.files || [])]);
+			}
+			// Remove the input element from DOM after processing
+			document.body.removeChild(input);
+		};
+
+		// Add to DOM, trigger click, then remove
+		document.body.appendChild(input);
+		input.click();
+	}
+
 	return (
 		<div className="min-h-screen grid place-items-center">
 			<main className="flex flex-col items-center justify-center relative">
@@ -38,7 +73,9 @@ export default function Home() {
 					style={{ fontSize: springs.headingSize }}
 					className="text-5xl font-semibold text-center leading-snug"
 				>
-					{isAppOpen ? "Drop your stuff" : "Bulk Animate"}
+					{isAppOpen
+						? `${uploadedFiles.length ? "Check" : "Drop"} your stuff`
+						: "Bulk Animate"}
 				</animated.h1>
 				<animated.p
 					style={{ opacity: springs.o }}
@@ -47,7 +84,11 @@ export default function Home() {
 					Give life to your media
 				</animated.p>
 				{isAppOpen ? (
-					<UploadGrid onClick={() => null} rect={buttonRect} />
+					<UploadGrid
+						onClick={triggerFileInput}
+						rect={buttonRect}
+						small={uploadedFiles.length > 0}
+					/>
 				) : (
 					<button
 						ref={buttonRef}
@@ -69,9 +110,32 @@ export default function Home() {
 					</span>
 				</animated.button>
 
-				{isAppOpen ? (
-					<button type="button" className="font-light">
+				{isAppOpen && !uploadedFiles.length ? (
+					<button
+						onClick={triggerFileInput}
+						type="button"
+						className="font-light"
+					>
 						Choose File
+					</button>
+				) : null}
+
+				<div className="mt-8 flex items-center gap-4 flex-wrap mx-8 justify-center">
+					{imagePreviews.map((src, i) => (
+						<UploadPreview
+							key={i.toString()}
+							src={src}
+							onClick={() => removeUpload(i)}
+						/>
+					))}
+				</div>
+
+				{uploadedFiles.length ? (
+					<button
+						type="button"
+						className="bg-primary text-bg px-8 py-4 mt-16 mb-16"
+					>
+						Start
 					</button>
 				) : null}
 			</main>
