@@ -4,26 +4,23 @@ import { useEffect, useRef, useState } from "react";
 import UploadGrid from "./upload-grid";
 import UploadPreview from "./upload-preview";
 
-export default function Home() {
+export default function Home(props: { onSubmit: (images: string[]) => void }) {
 	const [isAppOpen, setIsAppOpen] = useState(false);
 	const [buttonRect, setButtonRect] = useState({ width: 0, height: 0 });
 	const buttonRef = useRef<HTMLButtonElement>(null);
-	const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+	const [uploads, setUploads] = useState<
+		{ id: string; file: File; url: string }[]
+	>([]);
 
-	const imagePreviews = uploadedFiles.map((file) => URL.createObjectURL(file));
-
-	const [springs] = useSpring(
+	const [springs, api] = useSpring(
 		() => ({
-			headingSize: isAppOpen
-				? uploadedFiles.length
-					? "2.5rem"
-					: "4.5rem"
-				: "3rem",
+			headingSize: isAppOpen ? (uploads.length ? "2.5rem" : "4.5rem") : "3rem",
 			o: isAppOpen ? 0 : 1,
 			rw: 0,
 			rh: 0,
+			co: 1,
 		}),
-		[isAppOpen, uploadedFiles.length],
+		[isAppOpen, uploads.length],
 	);
 
 	useEffect(() => {
@@ -39,8 +36,12 @@ export default function Home() {
 		setIsAppOpen(true);
 	}
 
-	function removeUpload(i: number) {
-		setUploadedFiles((e) => [...e.slice(0, i), ...e.slice(i + 1)]);
+	function removeUpload(id: string) {
+		setUploads((prev) => {
+			const item = prev.find((u) => u.id === id);
+			if (item) URL.revokeObjectURL(item.url);
+			return prev.filter((u) => u.id !== id);
+		});
 	}
 
 	function triggerFileInput() {
@@ -53,11 +54,14 @@ export default function Home() {
 
 		input.onchange = (e) => {
 			const target = e.target as HTMLInputElement;
-			// Only add files if there are actual files selected
 			if (target.files && target.files.length > 0) {
-				setUploadedFiles((c) => [...c, ...Array.from(target.files || [])]);
+				const newItems = Array.from(target.files).map((file) => ({
+					id: crypto.randomUUID(),
+					file,
+					url: URL.createObjectURL(file),
+				}));
+				setUploads((prev) => [...prev, ...newItems]);
 			}
-			// Remove the input element from DOM after processing
 			document.body.removeChild(input);
 		};
 
@@ -66,15 +70,27 @@ export default function Home() {
 		input.click();
 	}
 
+	function onSubmit() {
+		api.start({
+			co: 0,
+			onRest: () => {
+				props.onSubmit(uploads.map((u) => u.url));
+			},
+		});
+	}
+
 	return (
 		<div className="min-h-screen grid place-items-center">
-			<main className="flex flex-col items-center justify-center relative">
+			<animated.main
+				style={{ opacity: springs.co }}
+				className="flex flex-col items-center justify-center relative"
+			>
 				<animated.h1
 					style={{ fontSize: springs.headingSize }}
 					className="text-5xl font-semibold text-center leading-snug"
 				>
 					{isAppOpen
-						? `${uploadedFiles.length ? "Check" : "Drop"} your stuff`
+						? `${uploads.length ? "Check" : "Drop"} your stuff`
 						: "Bulk Animate"}
 				</animated.h1>
 				<animated.p
@@ -87,7 +103,7 @@ export default function Home() {
 					<UploadGrid
 						onClick={triggerFileInput}
 						rect={buttonRect}
-						small={uploadedFiles.length > 0}
+						small={uploads.length > 0}
 					/>
 				) : (
 					<button
@@ -110,7 +126,7 @@ export default function Home() {
 					</span>
 				</animated.button>
 
-				{isAppOpen && !uploadedFiles.length ? (
+				{isAppOpen && !uploads.length ? (
 					<button
 						onClick={triggerFileInput}
 						type="button"
@@ -121,24 +137,25 @@ export default function Home() {
 				) : null}
 
 				<div className="mt-8 flex items-center gap-4 flex-wrap mx-8 justify-center">
-					{imagePreviews.map((src, i) => (
+					{uploads.map((u) => (
 						<UploadPreview
-							key={i.toString()}
-							src={src}
-							onClick={() => removeUpload(i)}
+							key={u.id}
+							src={u.url}
+							onClick={() => removeUpload(u.id)}
 						/>
 					))}
 				</div>
 
-				{uploadedFiles.length ? (
+				{uploads.length ? (
 					<button
 						type="button"
 						className="bg-primary text-bg px-8 py-4 mt-16 mb-16"
+						onClick={onSubmit}
 					>
 						Start
 					</button>
 				) : null}
-			</main>
+			</animated.main>
 
 			<animated.p
 				style={{
