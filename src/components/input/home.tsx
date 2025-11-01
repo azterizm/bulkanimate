@@ -70,11 +70,28 @@ export default function Home(props: { onSubmit: (images: string[]) => void }) {
 		input.click();
 	}
 
-	function onSubmit() {
+	async function onSubmit() {
 		api.start({
 			co: 0,
-			onRest: () => {
-				props.onSubmit(uploads.map((u) => u.url));
+			onRest: async () => {
+				const dataUris = await Promise.all(
+					uploads.map(async (u) => {
+						return new Promise<string>((resolve, reject) => {
+							const reader = new FileReader();
+							reader.onload = () => {
+								const result = reader.result as string;
+								if (result.startsWith("data:")) {
+									resolve(result);
+								} else {
+									reject(new Error("Invalid data URI generated"));
+								}
+							};
+							reader.onerror = () => reject(new Error("Failed to read file"));
+							reader.readAsDataURL(u.file);
+						});
+					}),
+				);
+				props.onSubmit(dataUris);
 			},
 		});
 	}

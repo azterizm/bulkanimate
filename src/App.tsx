@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import ImageRow from "./components/image-row";
 import Input from "./components/input/home";
-import AnimatedImageRow from "./components/AnimatedImageRow";
 
 export default function App() {
   const [images, setImages] = useState<string[]>([]);
@@ -11,13 +11,5 @@ export default function App() {
     }
   }
 
-  useEffect(() => {
-    return () => {
-      images.forEach((u) => {
-        if (u && u.startsWith("blob:")) URL.revokeObjectURL(u);
-      });
-    };
-  }, [images]);
-
-  return images.length > 0 ? (<AnimatedImageRow onReset={handleReset} images={images} />) : (<Input onSubmit={setImages} />);
+  return images.length > 0 ? (<ImageRow onReset={handleReset} images={images} />) : (<Input onSubmit={setImages} />);
 }
